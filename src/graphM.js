@@ -33,17 +33,21 @@ module.exports = function() {
     getVertices: () => vertices,
     getEdges: () => {
       const allEdges = [];
-      for (const [vertexName, vertex] of vertices.entries()) {
+      for (const vertex of vertices.values()) {
         for (const adjacentVertexName of vertex.edges.keys()) {
-          allEdges.push([vertexName, adjacentVertexName]);
+          allEdges.push([vertex.name, adjacentVertexName]);
         }
       }
       return allEdges;
     },
-    addVertice: (name, edgeList) => {
+    addVertex: (name, edgeList) => {
       const newVertice = {
         // turn edgeList into a Map here
-        edges: new Map(Object.keys(edgeList).map(k => [k, edgeList[k]])),
+        edges: new Map(
+          edgeList.map(e => {
+            return [e.name, e.weight];
+          })
+        ),
         name: name
       };
       vertices.set(name, newVertice);
@@ -59,14 +63,14 @@ module.exports = function() {
       const state = new Map();
       const q = new Queue();
       distances.set(startVertexName, 0);
-      q.enqueue(startVertexName);
+      q.enqueue(startVertexName.toString());
       while (q.isEmpty() === false) {
         const currentVertexName = q.dequeue();
         const currentVertexEdges = vertices.get(currentVertexName).edges;
-        for (let adjacentVertexName of currentVertexEdges.keys()) {
+        for (const adjacentVertexName of currentVertexEdges.keys()) {
           // visit the adjacent node if it has not been visited yet
           if (state.get(adjacentVertexName) === undefined) {
-            console.log(`visiting ${adjacentVertexName}`);
+            //console.log(`visiting ${adjacentVertexName}`);
             state.set(adjacentVertexName, STATE_CURRENTLY_BEING_VISITED);
             // the distance (in hops) to the adjacentVertex is
             // the distance (from the starting vertex) to the current vertex plus one
@@ -83,7 +87,10 @@ module.exports = function() {
         // we're done with this vertex now
         state.set(currentVertexName, STATE_VISITED);
       }
-      return { distances: distances, path: path };
+      return {
+        distances: distances,
+        allPaths: _buildAllPathsFromPath(startVertexName, path)
+      };
     },
 
     bellmanFord: function(startVertexName) {
@@ -92,7 +99,7 @@ module.exports = function() {
       const vertices = this.getVertices();
       const edges = this.getEdges();
       const edgeWeight = (a, b) => vertices.get(a).edges.get(b);
-      for (let vertexName of vertices.keys()) {
+      for (const vertexName of vertices.keys()) {
         distances.set(vertexName, 0xffffffff);
       }
       distances.set(startVertexName, 0);
@@ -104,6 +111,7 @@ module.exports = function() {
           }
         }
       }
+
       return {
         distances: distances,
         allPaths: _buildAllPathsFromPath(startVertexName, path)
